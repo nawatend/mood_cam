@@ -9,7 +9,7 @@ class ObjectDetection extends Component {
     state = {
         width: 640,
         height: 480,
-        detects: []
+        detectedNames: []
     }
 
     constructor(props) {
@@ -21,6 +21,24 @@ class ObjectDetection extends Component {
         this.canvasFaceRef = React.createRef()
     }
 
+    handleDetections = (detections) => {
+        let newArray = [...this.state.detectedNames]
+
+        if (detections.length > 0) {
+            detections.forEach(detection => {
+                if (newArray.includes(detection.class)) {
+                    //do niets
+                } else {
+                    newArray.push(detection.class)
+
+                    this.setState({ detectedNames: newArray })
+                    //push to firebase
+                }
+            });
+        } else {
+            console.log('Nothing is detected')
+        }
+    }
 
 
     detectObjectFromVideo = (model, video) => {
@@ -34,7 +52,7 @@ class ObjectDetection extends Component {
             // this.setState({ detects: [...detections] })
 
             //this.detectObjectFromVideo(model, video)
-            console.log(detections)
+            //console.log(detections)
 
         }, (error) => {
             console.log("Webcam is not active.")
@@ -113,6 +131,7 @@ class ObjectDetection extends Component {
                 ctx.fillText(detection.score.toFixed(2), x, y + height - textHeight);
             }
         });
+        this.handleDetections(detections)
     };
 
     componentDidMount() {
@@ -150,14 +169,13 @@ class ObjectDetection extends Component {
                 faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
                 faceapi.nets.faceExpressionNet.loadFromUri('/models'),
                 faceapi.nets.ageGenderNet.loadFromUri('/models')
-
             ]).then(values => {
                 setInterval(() => {
                     //this.detectObjectFromVideo(model, video)
                     this.detectObjectFromVideo(values[0], this.videoRef.current)
                     this.detectFaceFromVideo(this.videoRef.current)
 
-                }, 100)
+                }, 5000)
 
             })
                 .catch(error => {
