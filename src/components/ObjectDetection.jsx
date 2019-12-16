@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import * as faceapi from 'face-api.js';
 import '../App.css';
 
 
@@ -7,28 +8,80 @@ class ObjectDetection extends Component {
 
     state = {
         width: 640,
-        height: 480
+        height: 480,
+        detects: []
     }
 
-    videoRef = React.createRef()
-    canvasRef = React.createRef()
+    constructor(props) {
+
+        super(props)
+
+        this.videoRef = React.createRef()
+        this.canvasObjectRef = React.createRef()
+        this.canvasFaceRef = React.createRef()
+    }
+
+
 
     detectObjectFromVideo = (model, video) => {
         model.detect(video).then(detections => {
             this.renderDetections(detections);
 
-            requestAnimationFrame(() => {
-                this.detectObjectFromVideo(model, video);
-            });
+            // requestAnimationFrame(() => {
+            //     this.detectObjectFromVideo(model, video);
+            // });
+
+            // this.setState({ detects: [...detections] })
+
+            //this.detectObjectFromVideo(model, video)
+            console.log(detections)
+
         }, (error) => {
-            console.log("Couldn't start the webcam")
+            console.log("Webcam is not active.")
             console.error(error)
         });
     };
 
 
+    detectFaceFromVideo = async (video) => {
+
+        const canvas = this.canvasFaceRef.current
+        const displaySize = {
+            width: this.state.width,
+            height: this.state.height
+        }
+
+        //faceapi.matchDimensions(this.canvasFaceRef, displaySize)
+
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions().withAgeAndGender()
+        const resizedDetections = faceapi.resizeResults(detections, displaySize)
+
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+        faceapi.draw.drawDetections(canvas, resizedDetections)
+        faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
+        faceapi.draw.drawFaceExpressions(canvas, resizedDetections)
+
+
+
+        resizedDetections.forEach(result => {
+            const {
+                age,
+                gender,
+                genderProbability
+            } = result
+            new faceapi.draw.DrawTextField(
+                [
+                    `Age: ${age.toFixed(2)} years`,
+                    `Gender: ${gender} (${genderProbability.toFixed(2)})`
+                ],
+                result.detection.box.topRight
+            ).draw(canvas)
+        })
+
+    }
+
     renderDetections = detections => {
-        const ctx = this.canvasRef.current.getContext("2d");
+        const ctx = this.canvasObjectRef.current.getContext("2d");
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         const font = "18px Laca";
         ctx.font = font;
@@ -36,7 +89,7 @@ class ObjectDetection extends Component {
 
         detections.forEach(detection => {
 
-            if (detection.score.toFixed(2) >= 0.60) {
+            if (detection.score.toFixed(2) >= 0.70) {
                 const x = detection.bbox[0];
                 const y = detection.bbox[1];
                 const width = detection.bbox[2];
@@ -82,7 +135,7 @@ class ObjectDetection extends Component {
                         };
                     });
                 }, (error) => {
-                    console.log("Couldn't start the webcam")
+                    console.log("Webcam is not active")
                     console.error(error)
                 });
 
@@ -90,10 +143,23 @@ class ObjectDetection extends Component {
             const loadlModelPromise = cocoSsd.load();
 
             // resolve all the Promises
-            Promise.all([loadlModelPromise, webcamPromise])
-                .then(values => {
-                    this.detectObjectFromVideo(values[0], this.videoRef.current);
-                })
+            Promise.all([loadlModelPromise, webcamPromise,
+                faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+                faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+                faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+                faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+                faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+                faceapi.nets.ageGenderNet.loadFromUri('/models')
+
+            ]).then(values => {
+                setInterval(() => {
+                    //this.detectObjectFromVideo(model, video)
+                    this.detectObjectFromVideo(values[0], this.videoRef.current)
+                    this.detectFaceFromVideo(this.videoRef.current)
+
+                }, 100)
+
+            })
                 .catch(error => {
                     console.error(error);
                 });
@@ -111,7 +177,10 @@ class ObjectDetection extends Component {
                     autoPlay
                     muted
                 />
-                <canvas className="canvas" ref={this.canvasRef} width={this.state.width} height={this.state.height} />
+
+
+                <canvas className="canvas" ref={this.canvasObjectRef} width={this.state.width} height={this.state.height} />
+                <canvas className="canvas" ref={this.canvasFaceRef} width={this.state.width} height={this.state.height} />
             </div>
         )
     }
