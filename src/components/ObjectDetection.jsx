@@ -2,7 +2,8 @@ import React, { Component } from 'react';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as faceapi from 'face-api.js';
 import '../App.css';
-
+import firebase from '../utils/firebase'
+import getTodayDate from '../utils/functions'
 
 class ObjectDetection extends Component {
 
@@ -13,29 +14,49 @@ class ObjectDetection extends Component {
     }
 
     constructor(props) {
-
         super(props)
 
         this.videoRef = React.createRef()
         this.canvasObjectRef = React.createRef()
         this.canvasFaceRef = React.createRef()
+        this.database = firebase.database()
     }
 
     handleDetections = (detections) => {
         let newArray = [...this.state.detectedNames]
-
+        let todayObjectRef = this.database.ref('objects/' + getTodayDate() + '/')
         if (detections.length > 0) {
-            detections.forEach(detection => {
+            detections.forEach((detection, id) => {
                 if (newArray.includes(detection.class)) {
                     //do niets
+                    // + one to Firebase
+                    console.log('+ 1 ')
                 } else {
+                    //add to array for FIREBASE
+                    console.log('Added To Array ')
                     newArray.push(detection.class)
-
                     this.setState({ detectedNames: newArray })
-                    //push to firebase
                 }
-            });
+
+                // console.log("Max Detections: " + detections.length)
+                // Push and empty array for FIREBASE
+                todayObjectRef.once('value', (snapshots) => {
+                    snapshots.forEach(snapshot => {
+                        if (snapshot.key === detection.class) {
+                            let total = snapshot.val()
+                            this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(++total)
+                            console.log('Push TO FIREBASE')
+                        }
+                    });
+                })
+                //this.database.ref("objects/" + getTodayDate() + "/" + this.state.detectedNames[0]).set(1)
+                //empty array
+                if (id === (detections.length - 1)) {
+                    this.setState({ detectedNames: [] })
+                }
+            })
         } else {
+            //EMPTY state.detectedNames
             console.log('Nothing is detected')
         }
     }
@@ -69,8 +90,6 @@ class ObjectDetection extends Component {
             height: this.state.height
         }
 
-        //faceapi.matchDimensions(this.canvasFaceRef, displaySize)
-
         const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions().withAgeAndGender()
         const resizedDetections = faceapi.resizeResults(detections, displaySize)
 
@@ -79,17 +98,13 @@ class ObjectDetection extends Component {
         faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
         faceapi.draw.drawFaceExpressions(canvas, resizedDetections)
 
-
-
         resizedDetections.forEach(result => {
             const {
-                age,
                 gender,
                 genderProbability
             } = result
             new faceapi.draw.DrawTextField(
                 [
-                    `Age: ${age.toFixed(2)} years`,
                     `Gender: ${gender} (${genderProbability.toFixed(2)})`
                 ],
                 result.detection.box.topRight
@@ -112,7 +127,7 @@ class ObjectDetection extends Component {
                 const y = detection.bbox[1];
                 const width = detection.bbox[2];
                 const height = detection.bbox[3];
-                // Draw the bounding box.
+                // Draw the bounding box
                 ctx.strokeStyle = "#ffd369";
                 ctx.lineWidth = 1;
                 ctx.strokeRect(x, y, width, height);
@@ -175,7 +190,7 @@ class ObjectDetection extends Component {
                     this.detectObjectFromVideo(values[0], this.videoRef.current)
                     this.detectFaceFromVideo(this.videoRef.current)
 
-                }, 5000)
+                }, 1000)
 
             })
                 .catch(error => {

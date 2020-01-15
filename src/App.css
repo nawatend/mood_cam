@@ -21,7 +21,6 @@
 .video {
   position: absolute;
   top: calc(50% - 240px);
-
   left: calc(50% - 320px);
   border-radius: 10px;
   border: 10px #ffd369 solid;
@@ -30,6 +29,5 @@
 .canvas {
   position: absolute;
   top: calc(50% - 240px);
-
   left: calc(50% - 320px);
 }
