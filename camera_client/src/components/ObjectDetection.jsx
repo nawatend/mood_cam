@@ -20,23 +20,36 @@ class ObjectDetection extends Component {
         this.canvasObjectRef = React.createRef()
         this.canvasFaceRef = React.createRef()
         this.database = firebase.database()
+        this.img = new Image()
+
+
     }
 
     handleDetections = (detections) => {
         let newArray = [...this.state.detectedNames]
+        let allObjectsRef = this.database.ref('objects/')
         let todayObjectRef = this.database.ref('objects/' + getTodayDate() + '/')
+
         if (detections.length > 0) {
             detections.forEach((detection, id) => {
+
+                //check if new detection is in array of 1 sec ago
                 if (newArray.includes(detection.class)) {
-                    //do niets
-                    // + one to Firebase
-                    console.log('+ 1 ')
+                    // + one to detected class - in Firebase
+
                 } else {
                     //add to array for FIREBASE
-                    console.log('Added To Array ')
                     newArray.push(detection.class)
                     this.setState({ detectedNames: newArray })
                 }
+
+                allObjectsRef.once('value', (snapshots) => {
+                    if (snapshots.hasChild(getTodayDate())) {
+                        //  console.log('today exist')
+                    } else {
+                        this.database.ref("objects/" + getTodayDate() + "/" + detection.class).set(1)
+                    }
+                })
 
                 // console.log("Max Detections: " + detections.length)
                 // Push and empty array for FIREBASE
@@ -45,11 +58,19 @@ class ObjectDetection extends Component {
                         if (snapshot.key === detection.class) {
                             let total = snapshot.val()
                             this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(++total)
-                            console.log('Push TO FIREBASE')
+                            // console.log('Push TO FIREBASE')
+                        } else {
+                            if (!snapshots.hasChild(detection.class)) {
+                                //add new object to today's detected
+                                this.database.ref("objects/" + getTodayDate() + "/" + detection.class).set(1)
+                            }
+                            //console.log(' Not Push TO FIREBASE')
                         }
+
+
                     });
                 })
-                //this.database.ref("objects/" + getTodayDate() + "/" + this.state.detectedNames[0]).set(1)
+                //  this.database.ref("objects/" + getTodayDate() + "/" + this.state.detectedNames[0]).set(1)
                 //empty array
                 if (id === (detections.length - 1)) {
                     this.setState({ detectedNames: [] })
@@ -82,6 +103,33 @@ class ObjectDetection extends Component {
     };
 
 
+    drawFilter = (canvasContext, detections) => {
+
+        if (detections.length === 1) {
+
+
+
+            let x = detections[0].detection.box.x
+            let y = detections[0].detection.box.y
+            let width = detections[0].detection.box.width
+            let height = detections[0].detection.box.height
+
+            canvasContext.strokeStyle = "red"
+            canvasContext.strokeWidth = 1
+
+
+            canvasContext.strokeRect(x, y, width, height)
+
+
+
+            canvasContext.drawImage(this.img, x, y, width, height)
+            console.log('filter drawn')
+
+
+        }
+    }
+
+
     detectFaceFromVideo = async (video) => {
 
         const canvas = this.canvasFaceRef.current
@@ -95,9 +143,11 @@ class ObjectDetection extends Component {
 
         canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
         faceapi.draw.drawDetections(canvas, resizedDetections)
-        faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
-        faceapi.draw.drawFaceExpressions(canvas, resizedDetections)
+        //faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
+        //faceapi.draw.drawFaceExpressions(canvas, resizedDetections)
 
+        this.drawFilter(canvas.getContext('2d'), detections)
+        console.log(resizedDetections)
         resizedDetections.forEach(result => {
             const {
                 gender,
@@ -109,6 +159,7 @@ class ObjectDetection extends Component {
                 ],
                 result.detection.box.topRight
             ).draw(canvas)
+
         })
 
     }
@@ -150,6 +201,11 @@ class ObjectDetection extends Component {
     };
 
     componentDidMount() {
+
+        this.img.src = "teddy.png"
+
+
+
         if (navigator.mediaDevices.getUserMedia || navigator.mediaDevices.webkitGetUserMedia) {
             // define a Promise that'll be used to load the webcam and read its frames
             const webcamPromise = navigator.mediaDevices
@@ -198,6 +254,8 @@ class ObjectDetection extends Component {
                 });
         }
     }
+
+
 
     render() {
         return (
