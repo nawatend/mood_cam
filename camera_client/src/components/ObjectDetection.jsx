@@ -62,7 +62,9 @@ class ObjectDetection extends Component {
 
 
                                 let total = snapshot.val()
-                                this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(++total)
+                                if (objectDetection.class !== "person") {
+                                    this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(++total)
+                                }
                                 // console.log('Push TO FIREBASE')
                             } else {
 
