@@ -33,44 +33,46 @@ class ObjectDetection extends Component {
         if (detections.length > 0) {
             detections.forEach((detection, id) => {
 
-                //check if new detection is in array of 1 sec ago
-                if (newArray.includes(detection.class)) {
-                    // + one to detected class - in Firebase
+                if (detection.score.toFixed(2) >= 0.70) {
+                    //check if new detection is in array of 1 sec ago
+                    if (newArray.includes(detection.class)) {
+                        // + one to detected class - in Firebase
 
-                } else {
-                    //add to array for FIREBASE
-                    newArray.push(detection.class)
-                    this.setState({ detectedNames: newArray })
+                    } else {
+                        //add to array for FIREBASE
+                        newArray.push(detection.class)
+                        this.setState({ detectedNames: newArray })
+                    }
+
+                    allObjectsRef.once('value', (snapshots) => {
+                        if (snapshots.hasChild(getTodayDate())) {
+                            //  console.log('today exist')
+                        } else {
+                            this.database.ref("objects/" + getTodayDate() + "/" + detection.class).set(1)
+                        }
+                    })
+
+
+                    // console.log("Max Detections: " + detections.length)
+                    // Push and empty array for FIREBASE
+                    todayObjectRef.once('value', (snapshots) => {
+                        snapshots.forEach(snapshot => {
+                            if (snapshot.key === detection.class) {
+                                let total = snapshot.val()
+                                this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(++total)
+                                // console.log('Push TO FIREBASE')
+                            } else {
+                                if (!snapshots.hasChild(detection.class)) {
+                                    //add new object to today's detected
+                                    this.database.ref("objects/" + getTodayDate() + "/" + detection.class).set(1)
+                                }
+                                //console.log(' Not Push TO FIREBASE')
+                            }
+                        });
+                    })
+
                 }
 
-                allObjectsRef.once('value', (snapshots) => {
-                    if (snapshots.hasChild(getTodayDate())) {
-                        //  console.log('today exist')
-                    } else {
-                        this.database.ref("objects/" + getTodayDate() + "/" + detection.class).set(1)
-                    }
-                })
-
-                // console.log("Max Detections: " + detections.length)
-                // Push and empty array for FIREBASE
-                todayObjectRef.once('value', (snapshots) => {
-                    snapshots.forEach(snapshot => {
-                        if (snapshot.key === detection.class) {
-                            let total = snapshot.val()
-                            this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(++total)
-                            // console.log('Push TO FIREBASE')
-                        } else {
-                            if (!snapshots.hasChild(detection.class)) {
-                                //add new object to today's detected
-                                this.database.ref("objects/" + getTodayDate() + "/" + detection.class).set(1)
-                            }
-                            //console.log(' Not Push TO FIREBASE')
-                        }
-
-
-                    });
-                })
-                //  this.database.ref("objects/" + getTodayDate() + "/" + this.state.detectedNames[0]).set(1)
                 //empty array
                 if (id === (detections.length - 1)) {
                     this.setState({ detectedNames: [] })
@@ -105,25 +107,27 @@ class ObjectDetection extends Component {
 
     drawFilter = (canvasContext, detections) => {
 
-        if (detections.length === 1) {
+        if (detections.length >= 1) {
+
+            detections.forEach((detection) => {
+                let x = detection.detection.box.x + 30
+                let y = detection.detection.box.y
+                let width = detection.detection.box.width * 0.8
+                let height = detection.detection.box.height
+
+                canvasContext.strokeStyle = "red"
+                canvasContext.strokeWidth = 1
 
 
-
-            let x = detections[0].detection.box.x
-            let y = detections[0].detection.box.y
-            let width = detections[0].detection.box.width
-            let height = detections[0].detection.box.height
-
-            canvasContext.strokeStyle = "red"
-            canvasContext.strokeWidth = 1
+                canvasContext.strokeRect(x, y, width, height)
 
 
-            canvasContext.strokeRect(x, y, width, height)
+                //1:1.55 filter image ratio
+                canvasContext.drawImage(this.img, x, y, width, width * 1.255)
+                console.log('filter drawn')
 
+            })
 
-
-            canvasContext.drawImage(this.img, x, y, width, height)
-            console.log('filter drawn')
 
 
         }
@@ -147,7 +151,7 @@ class ObjectDetection extends Component {
         //faceapi.draw.drawFaceExpressions(canvas, resizedDetections)
 
         this.drawFilter(canvas.getContext('2d'), detections)
-        console.log(resizedDetections)
+        //console.log(resizedDetections)
         resizedDetections.forEach(result => {
             const {
                 gender,
@@ -196,13 +200,16 @@ class ObjectDetection extends Component {
                 ctx.fillText(detection.class, x, y);
                 ctx.fillText(detection.score.toFixed(2), x, y + height - textHeight);
             }
+
+
         });
         this.handleDetections(detections)
+
     };
 
     componentDidMount() {
 
-        this.img.src = "teddy.png"
+        this.img.src = "anon.png"
 
 
 
