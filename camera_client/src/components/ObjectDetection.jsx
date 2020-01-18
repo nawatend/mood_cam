@@ -10,7 +10,7 @@ class ObjectDetection extends Component {
     state = {
         width: 640,
         height: 480,
-        detectedNames: []
+        objectDetectedNames: []
     }
 
     constructor(props) {
@@ -22,25 +22,26 @@ class ObjectDetection extends Component {
         this.database = firebase.database()
         this.img = new Image()
 
-
     }
 
-    handleDetections = (detections) => {
-        let newArray = [...this.state.detectedNames]
+    handleDetections = (objectDetections) => {
+        let newArray = [...this.state.objectDetectedNames]
         let allObjectsRef = this.database.ref('objects/')
         let todayObjectRef = this.database.ref('objects/' + getTodayDate() + '/')
 
-        if (detections.length > 0) {
-            detections.forEach((detection, id) => {
+        let personObject = { neutral: 0, happy: 0, sad: 0, surprised: 0, disgusted: 0, angry: 0 }
 
-                if (detection.score.toFixed(2) >= 0.70) {
+        if (objectDetections.length > 0) {
+            objectDetections.forEach((objectDetection, id) => {
+
+                if (objectDetection.score.toFixed(2) >= 0.70) {
                     //check if new detection is in array of 1 sec ago
-                    if (newArray.includes(detection.class)) {
+                    if (newArray.includes(objectDetection.class)) {
                         // + one to detected class - in Firebase
 
                     } else {
                         //add to array for FIREBASE
-                        newArray.push(detection.class)
+                        newArray.push(objectDetection.class)
                         this.setState({ detectedNames: newArray })
                     }
 
@@ -48,7 +49,7 @@ class ObjectDetection extends Component {
                         if (snapshots.hasChild(getTodayDate())) {
                             //  console.log('today exist')
                         } else {
-                            this.database.ref("objects/" + getTodayDate() + "/" + detection.class).set(1)
+                            this.database.ref("objects/" + getTodayDate() + "/" + objectDetection.class).set(1)
                         }
                     })
 
@@ -57,14 +58,24 @@ class ObjectDetection extends Component {
                     // Push and empty array for FIREBASE
                     todayObjectRef.once('value', (snapshots) => {
                         snapshots.forEach(snapshot => {
-                            if (snapshot.key === detection.class) {
+                            if (snapshot.key === objectDetection.class) {
+
+
                                 let total = snapshot.val()
                                 this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(++total)
                                 // console.log('Push TO FIREBASE')
                             } else {
-                                if (!snapshots.hasChild(detection.class)) {
-                                    //add new object to today's detected
-                                    this.database.ref("objects/" + getTodayDate() + "/" + detection.class).set(1)
+
+
+                                if (!snapshots.hasChild(objectDetection.class)) {
+
+                                    if (objectDetection.class === "person") {
+                                        this.database.ref("objects/" + getTodayDate() + "/" + objectDetection.class).set(personObject)
+                                    } else {
+                                        //add new object to today's detected
+                                        this.database.ref("objects/" + getTodayDate() + "/" + objectDetection.class).set(1)
+                                    }
+
                                 }
                                 //console.log(' Not Push TO FIREBASE')
                             }
@@ -74,12 +85,12 @@ class ObjectDetection extends Component {
                 }
 
                 //empty array
-                if (id === (detections.length - 1)) {
-                    this.setState({ detectedNames: [] })
+                if (id === (objectDetections.length - 1)) {
+                    this.setState({ objectDetectedNames: [] })
                 }
             })
         } else {
-            //EMPTY state.detectedNames
+            //EMPTY state.objectDetectedNames
             console.log('Nothing is detected')
         }
     }
@@ -105,15 +116,22 @@ class ObjectDetection extends Component {
     };
 
 
-    drawFilter = (canvasContext, detections) => {
+    drawFilter = (canvasContext, faceDetections) => {
 
-        if (detections.length >= 1) {
+        if (faceDetections.length >= 1) {
 
-            detections.forEach((detection) => {
-                let x = detection.detection.box.x + 30
-                let y = detection.detection.box.y
-                let width = detection.detection.box.width * 0.8
-                let height = detection.detection.box.height
+            faceDetections.forEach((faceDetection) => {
+                //this one line code from online
+                let faceEmotion = Object.keys(faceDetection.expressions).reduce((a, b) => faceDetection.expressions[a] > faceDetection.expressions[b] ? a : b);
+
+                //load image by emotion
+                faceEmotion += ".png"
+                this.img.src = "filters/" + faceEmotion
+
+                let x = faceDetection.detection.box.x + 30
+                let y = faceDetection.detection.box.y - 20
+                let width = faceDetection.detection.box.width * 0.8
+                let height = faceDetection.detection.box.height
 
                 canvasContext.strokeStyle = "red"
                 canvasContext.strokeWidth = 1
@@ -168,27 +186,27 @@ class ObjectDetection extends Component {
 
     }
 
-    renderDetections = detections => {
+    renderDetections = objectDetections => {
         const ctx = this.canvasObjectRef.current.getContext("2d");
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         const font = "18px Laca";
         ctx.font = font;
         ctx.textBaseline = "top";
 
-        detections.forEach(detection => {
+        objectDetections.forEach(objectDetection => {
 
-            if (detection.score.toFixed(2) >= 0.70) {
-                const x = detection.bbox[0];
-                const y = detection.bbox[1];
-                const width = detection.bbox[2];
-                const height = detection.bbox[3];
+            if (objectDetection.score.toFixed(2) >= 0.70) {
+                const x = objectDetection.bbox[0];
+                const y = objectDetection.bbox[1];
+                const width = objectDetection.bbox[2];
+                const height = objectDetection.bbox[3];
                 // Draw the bounding box
                 ctx.strokeStyle = "#ffd369";
                 ctx.lineWidth = 1;
                 ctx.strokeRect(x, y, width, height);
                 // Draw the label background.
                 ctx.fillStyle = "#ffd369";
-                const textWidth = ctx.measureText(detection.class).width;
+                const textWidth = ctx.measureText(objectDetection.class).width;
                 const textHeight = parseInt(font, 10);
                 // draw top left rectangle
                 ctx.fillRect(x, y, textWidth + 5, textHeight + 5);
@@ -197,19 +215,18 @@ class ObjectDetection extends Component {
 
                 // Draw the text last to ensure it's on top.
                 ctx.fillStyle = "#015668";
-                ctx.fillText(detection.class, x, y);
-                ctx.fillText(detection.score.toFixed(2), x, y + height - textHeight);
+                ctx.fillText(objectDetection.class, x, y);
+                ctx.fillText(objectDetection.score.toFixed(2), x, y + height - textHeight);
             }
 
 
         });
-        this.handleDetections(detections)
+        this.handleDetections(objectDetections)
 
     };
 
     componentDidMount() {
 
-        this.img.src = "anon.png"
 
 
 
@@ -261,7 +278,6 @@ class ObjectDetection extends Component {
                 });
         }
     }
-
 
 
     render() {
