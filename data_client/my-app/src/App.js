@@ -1,6 +1,6 @@
 import React from 'react';
 import Home from './views/Home';
-import ObjectP from './views/Object';
+import ObjectPage from './views/ObjectPage';
 import Statistic from './views/Statistic';
 import Mood from './views/Mood';
 import Dashboard from './views/Dashboard';
@@ -29,7 +29,7 @@ function App() {
       <Router>
         <Route path="/" component={Home} exact/>
         <Route path="/dashboard" component={Dashboard} exact/>
-        <Route path="/object" component={ObjectP} exact/>
+        <Route path="/object" component={ObjectPage} exact/>
         <Route path="/statistics" component={Statistic} exact/>
         <Route path="/mood" component={Mood} exact/>
       </Router>

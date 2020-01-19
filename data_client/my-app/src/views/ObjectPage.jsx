@@ -1,40 +1,62 @@
-import db from './../components/Firebase.jsx';
+import db from '../components/Firebase.jsx';
 import {Bar, Line, Pie} from 'react-chartjs-2';
 import React, { useState, useEffect, Component } from 'react';
 
 
-export default function Object() {
-    let keys = [];
-    let objects = [];
+export default function ObjectPage() {
+    const [obj, setobj] = useState("");
+    const [dataBar, setDataBar] = useState("");
+    const [optionBar, setOptionBar] = useState("");
+    const keys = []
 
-    let data = db.database().ref("objects");
-    data.on('value', function (snapshot) {
-        console.log(snapshot.val())
-      
+    window.addEventListener('load', function(){
+        document.getElementById('bar').style.display="none"
+   
+        const data = db.database().ref("objects");
+        data.on('value', function (snapshot) {      
+            for (var date in snapshot.val()) {
+                if(snapshot.val().hasOwnProperty(date)){
+                    keys.push(date)
+                }
+            }
+        
+        
+
+            console.log('hi')
+            console.log(keys.length)
+            for(let i=0; i< keys.length; i++){
+                let specificData = db.database().ref("objects/"+keys[i])
+                specificData.on('value',function(snapshot){
+                    console.log(snapshot.val())
+                })
+            }
+        })
     })
 
-    // in array objects moet de optellingen komen per object
 
+    useEffect(() => {
 
-    const dataBar = {
-        labels: ["aardbij", "banaan", "kers"],
-        datasets: [{
-            label: "fruit",
-            data:[2, 5, 7],
-            backgroundColor: [
-                "rgba(153,255,51,0.4)",
-                "rgba(153,0,51,0.4)",
-                "rgba(0,0,230,0.4)",
-            ],
-        }],
-    } ;
+        setDataBar({
+            labels: ["aardbij", "banaan", "kers"],
+            datasets: [{
+                label: "fruit",
+                data:[2, 5, 7],
+                backgroundColor: [
+                    "rgba(153,255,51,0.4)",
+                    "rgba(153,0,51,0.4)",
+                    "rgba(0,0,230,0.4)",
+                ],
+            }],
+        })
 
-    const optionBar = {
+        setOptionBar({
             legend: {
                 position: 'right',
             }
-    }
-
+        })
+        
+        
+    }, [])
 
     const seeBar =()=>{
         document.getElementById('circle').style.display="none"
@@ -55,9 +77,7 @@ export default function Object() {
 
     }
 
-    window.addEventListener('load', function(){
-        document.getElementById('bar').style.display="none"
-    })
+
     
    
 
