@@ -7,23 +7,39 @@ export default function ObjectPage() {
     const [obj, setobj] = useState("");
     const [dataBar, setDataBar] = useState("");
     const [optionBar, setOptionBar] = useState("");
-    const keys = []
+    const [date, setDate] = useState("")
+    let randomColor = [];
+    let dateArray = "";
+    let allObjects = [];
+    let somdata = []
+
+    function RandomColor(){
+        for(let i=0; i<somdata.length; i++){
+            let red = Math.floor(Math.random() * 255) + 1  
+            let green = Math.floor(Math.random() * 255) + 1  
+            let blue = Math.floor(Math.random() * 255) + 1  
+            randomColor.push(`rgba(${red},${green},${blue},0.9)`)
+        }
+        console.log(randomColor);
+        makeGraphic()
+
+    }
+
+
+
+
 
     window.addEventListener('load', function(){
         document.getElementById('bar').style.display="none"
     })
-    useEffect(() => {
-
+    
+    function makeGraphic(){
         setDataBar({
-            labels: ["aardbij", "banaan", "kers"],
+            labels: allObjects,
             datasets: [{
-                label: "fruit",
-                data:[2, 5, 7],
-                backgroundColor: [
-                    "rgba(153,255,51,0.4)",
-                    "rgba(153,0,51,0.4)",
-                    "rgba(0,0,230,0.4)",
-                ],
+                label: "Objects",
+                data: somdata,
+                backgroundColor: randomColor     
             }],
         })
 
@@ -32,22 +48,47 @@ export default function ObjectPage() {
                 position: 'right',
             }
         })
-        
-        
-    }, [])
+    }
+    
+    function makeData(){
 
-
-    const data = db.database().ref("objects");
-    data.on('value', function (snapshot) {      
-        for (var date in snapshot.val()) {
-            if(snapshot.val().hasOwnProperty(date)){
-                keys.push(date)
-            }
+    
+    db.database().ref("objects").on('value', function (snapshot) {
+        let dates = snapshot.val();
+        dateArray = Object.keys(dates)
+        
+        for(let i = 0; i<dateArray.length; i++){
+            db.database().ref(`objects/${dateArray[i]}`).on('value', function (snapshot) {
+                let objectType = Object.keys(snapshot.val());
+                for(let j = 0; j< objectType.length; j++){
+                    if((allObjects.includes(objectType[j]) == false) && (objectType[j] !== "person")){
+                        allObjects.push(objectType[j])
+                    }
+                }
+            })
+            
         }
-        console.log(keys)
+        allObjects.map((obj,key)=>{
+            console.log(obj)
+            let amount=0;
+            
+            for(let i = 0; i<dateArray.length; i++){
+                db.database().ref(`objects/${dateArray[i]}/${obj}`).on('value', function (snapshot) {
+                    let number = snapshot.val()
+                    amount = amount + number
+                })
+            }
+            somdata.push(amount)
+        })
+        RandomColor();
 
     })
-
+}
+    
+    useEffect(() => {
+        makeData()
+ 
+    }, [])
     const seeBar =()=>{
         document.getElementById('circle').style.display="none"
         document.getElementById('bar').style.display="block"
@@ -82,7 +123,7 @@ export default function ObjectPage() {
             </div>
             <div id="graphic" className="graphic">
                 <Pie id="circle" width='100' height='100' data={dataBar} options={optionBar}/>
-                <Bar style="visibility: hidden;"className="displaynone" id="bar" width='100' height='100' data={dataBar} options={optionBar}/>
+                <Bar className="displaynone" id="bar" width='100' height='100' data={dataBar} options={optionBar}/>
             </div>
         </div>
     )
