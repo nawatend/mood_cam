@@ -11,29 +11,7 @@ export default function ObjectPage() {
 
     window.addEventListener('load', function(){
         document.getElementById('bar').style.display="none"
-   
-        const data = db.database().ref("objects");
-        data.on('value', function (snapshot) {      
-            for (var date in snapshot.val()) {
-                if(snapshot.val().hasOwnProperty(date)){
-                    keys.push(date)
-                }
-            }
-        
-        
-
-            console.log('hi')
-            console.log(keys.length)
-            for(let i=0; i< keys.length; i++){
-                let specificData = db.database().ref("objects/"+keys[i])
-                specificData.on('value',function(snapshot){
-                    console.log(snapshot.val())
-                })
-            }
-        })
     })
-
-
     useEffect(() => {
 
         setDataBar({
@@ -57,6 +35,18 @@ export default function ObjectPage() {
         
         
     }, [])
+
+
+    const data = db.database().ref("objects");
+    data.on('value', function (snapshot) {      
+        for (var date in snapshot.val()) {
+            if(snapshot.val().hasOwnProperty(date)){
+                keys.push(date)
+            }
+        }
+        console.log(keys)
+
+    })
 
     const seeBar =()=>{
         document.getElementById('circle').style.display="none"
