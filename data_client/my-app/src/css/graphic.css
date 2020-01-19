@@ -1,0 +1,7 @@
+.graphic{
+    width: 70vh;
+    height: 70vh;
+    margin-left: 50%;
+    transform: translate(-50%, 0);
+    padding-left: 3%;
+}
