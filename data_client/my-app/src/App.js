@@ -22,7 +22,7 @@ function App() {
        <a className="homeNav"  href="/"></a>
        <a href="/dashboard">Dashboard</a>
        <a href="/object">Object page</a>
-       <a href="/statistics">Statistic page</a>
+       <a href="/statistics">Statistics page</a>
        <a href="/mood">Mood page</a>
      </div>
      <div className="pagebody">

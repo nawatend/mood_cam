@@ -1,13 +1,19 @@
-import React from 'react';
 import db from './../components/Firebase.jsx';
-import {Bar, Line, Pie} from 'react-chartjs-2'
+import {Bar, Line, Pie} from 'react-chartjs-2';
+import React, { useState, useEffect, Component } from 'react';
+
 
 export default function Object() {
+    let keys = [];
+    let objects = [];
+
     let data = db.database().ref("objects");
     data.on('value', function (snapshot) {
-        let date = snapshot.val();
-        console.log(date)
+        console.log(snapshot.val())
+      
     })
+
+    // in array objects moet de optellingen komen per object
 
 
     const dataBar = {
@@ -33,25 +39,40 @@ export default function Object() {
     const seeBar =()=>{
         document.getElementById('circle').style.display="none"
         document.getElementById('bar').style.display="block"
+        document.getElementById('barbtn').style.borderBottom="3px solid rgb(6, 6, 92)"
+        document.getElementById('circlebtn').style.borderBottom="1px solid rgb(6, 6, 92)"
+        document.getElementById('barbtn').style.fontWeight="800"
+        document.getElementById('circlebtn').style.fontWeight="100"
+        
     }
     const seeCircle =()=>{
         document.getElementById('circle').style.display="block"
         document.getElementById('bar').style.display="none"
+        document.getElementById('circlebtn').style.borderBottom="solid 3px rgb(6, 6, 92)"
+        document.getElementById('barbtn').style.borderBottom="1px solid rgb(6, 6, 92)"
+        document.getElementById('barbtn').style.fontWeight="100"
+        document.getElementById('circlebtn').style.fontWeight="800"
+
     }
+
+    window.addEventListener('load', function(){
+        document.getElementById('bar').style.display="none"
+    })
     
    
 
     return (
-        <div class="page">
-            <h1>Object</h1>
+        <div className="page">
+            <h1>Objects</h1>
             <p>Here you can see all objects that are detected in total!</p>
-            <div>
-                <button onClick={seeCircle}>Circle</button>
-                <button onClick={seeBar}>Bar</button>
+            <div className="select">
+                <label id="circlebtn" onClick={seeCircle}>Circle</label>
+                <label id="barbtn" onClick={seeBar}>Bar</label>
+              
             </div>
-            <div className="graphic">
-                <Pie id="circle" width="100" height="100" data={dataBar} options={optionBar}/>
-                <Bar id="bar" width="100" height="100" data={dataBar} options={optionBar}/>
+            <div id="graphic" className="graphic">
+                <Pie id="circle" width='100' height='100' data={dataBar} options={optionBar}/>
+                <Bar style="visibility: hidden;"className="displaynone" id="bar" width='100' height='100' data={dataBar} options={optionBar}/>
             </div>
         </div>
     )

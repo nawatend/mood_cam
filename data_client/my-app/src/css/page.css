@@ -1,10 +1,31 @@
-.page h1, .page p{
+.page h1, .page p, .select label{
     text-align: center;
     font-family: 'Roboto', Arial, Helvetica, sans-serif;
     font-weight: 200;
     text-transform: uppercase;
+    transition: 0.2s;
 }
 
 .page {
     padding-top: 5%;
+}
+
+.select{
+    text-align: center;
+    width: 20%;
+    margin-left: 50%;
+    transform: translate(-50%, 0);
+    display: flex;
+    justify-content: space-around;
+    margin-top: 40px;
+}
+
+.select label {
+    padding: 10px;
+    border-bottom: 1px solid rgb(6, 6, 92);
+}
+
+.select label:hover {
+    font-weight: 800;
+    border-bottom: 3px solid rgb(6, 6, 92);
 }
