@@ -21,19 +21,20 @@ class ObjectDetection extends Component {
         this.canvasFaceRef = React.createRef()
         this.database = firebase.database()
         this.img = new Image()
-
     }
 
     handleDetections = (objectDetections) => {
+
+        //copy from currect state 
         let newArray = [...this.state.objectDetectedNames]
         let allObjectsRef = this.database.ref('objects/')
         let todayObjectRef = this.database.ref('objects/' + getTodayDate() + '/')
 
-        let personObject = { neutral: 0, happy: 0, sad: 0, surprised: 0, disgusted: 0, angry: 0 }
+        //if person detected: create this object in firebase DB
+        let personObject = { totalPerson: 1, neutral: 1, happy: 0, sad: 0, surprised: 0, disgusted: 0, angry: 0, man: 0, woman: 0 }
 
         if (objectDetections.length > 0) {
             objectDetections.forEach((objectDetection, id) => {
-
                 if (objectDetection.score.toFixed(2) >= 0.70) {
                     //check if new detection is in array of 1 sec ago
                     if (newArray.includes(objectDetection.class)) {
@@ -45,41 +46,46 @@ class ObjectDetection extends Component {
                         this.setState({ detectedNames: newArray })
                     }
 
+                    //check if today date object is exist
                     allObjectsRef.once('value', (snapshots) => {
                         if (snapshots.hasChild(getTodayDate())) {
                             //  console.log('today exist')
                         } else {
-                            this.database.ref("objects/" + getTodayDate() + "/" + objectDetection.class).set(1)
+                            if (objectDetection.class === "person") {
+                                this.database.ref("objects/" + getTodayDate() + "/" + objectDetection.class).set(personObject)
+                            } else {
+                                //add new object to today's detected
+                                this.database.ref("objects/" + getTodayDate() + "/" + objectDetection.class).set(1)
+                            }
                         }
                     })
 
 
-                    // console.log("Max Detections: " + detections.length)
-                    // Push and empty array for FIREBASE
+                    // Push object to db FIREBASE
                     todayObjectRef.once('value', (snapshots) => {
                         snapshots.forEach(snapshot => {
                             if (snapshot.key === objectDetection.class) {
 
+                                let total = 0
 
-                                let total = snapshot.val()
                                 if (objectDetection.class !== "person") {
+                                    total = snapshot.val()
                                     this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(++total)
+                                } else {
+                                    total = snapshot.val().totalPerson
+                                    this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key + "/totalPerson").set(++total)
                                 }
-                                // console.log('Push TO FIREBASE')
                             } else {
-
-
                                 if (!snapshots.hasChild(objectDetection.class)) {
 
                                     if (objectDetection.class === "person") {
+                                        //if person detected: create this object in firebase DB
                                         this.database.ref("objects/" + getTodayDate() + "/" + objectDetection.class).set(personObject)
                                     } else {
                                         //add new object to today's detected
                                         this.database.ref("objects/" + getTodayDate() + "/" + objectDetection.class).set(1)
                                     }
-
                                 }
-                                //console.log(' Not Push TO FIREBASE')
                             }
                         });
                     })
@@ -126,6 +132,8 @@ class ObjectDetection extends Component {
                 //this one line code from online
                 let faceEmotion = Object.keys(faceDetection.expressions).reduce((a, b) => faceDetection.expressions[a] > faceDetection.expressions[b] ? a : b);
 
+                this.database.ref("objects/" + getTodayDate() + "/person/" + faceEmotion).set(5)
+
                 //load image by emotion
                 faceEmotion += ".png"
                 this.img.src = "filters/" + faceEmotion
@@ -135,21 +143,14 @@ class ObjectDetection extends Component {
                 let width = faceDetection.detection.box.width * 0.8
                 let height = faceDetection.detection.box.height
 
-                canvasContext.strokeStyle = "red"
-                canvasContext.strokeWidth = 1
-
-
-                canvasContext.strokeRect(x, y, width, height)
-
+                // canvasContext.strokeStyle = "green"
+                // canvasContext.strokeWidth = 1
+                //canvasContext.strokeRect(x, y, width, height)
 
                 //1:1.55 filter image ratio
                 canvasContext.drawImage(this.img, x, y, width, width * 1.255)
                 console.log('filter drawn')
-
             })
-
-
-
         }
     }
 
@@ -168,7 +169,7 @@ class ObjectDetection extends Component {
         canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
         faceapi.draw.drawDetections(canvas, resizedDetections)
         //faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
-        //faceapi.draw.drawFaceExpressions(canvas, resizedDetections)
+        faceapi.draw.drawFaceExpressions(canvas, resizedDetections)
 
         this.drawFilter(canvas.getContext('2d'), detections)
         //console.log(resizedDetections)
@@ -197,6 +198,7 @@ class ObjectDetection extends Component {
 
         objectDetections.forEach(objectDetection => {
 
+            //draw frame only if prediction accuracy is more than 70%
             if (objectDetection.score.toFixed(2) >= 0.70) {
                 const x = objectDetection.bbox[0];
                 const y = objectDetection.bbox[1];
@@ -220,29 +222,24 @@ class ObjectDetection extends Component {
                 ctx.fillText(objectDetection.class, x, y);
                 ctx.fillText(objectDetection.score.toFixed(2), x, y + height - textHeight);
             }
-
-
         });
+        //what to do with data detected
         this.handleDetections(objectDetections)
-
     };
 
     componentDidMount() {
 
-
-
-
         if (navigator.mediaDevices.getUserMedia || navigator.mediaDevices.webkitGetUserMedia) {
-            // define a Promise that'll be used to load the webcam and read its frames
+            // load cam and read its frames
             const webcamPromise = navigator.mediaDevices
                 .getUserMedia({
                     video: true,
                     audio: false,
                 })
                 .then(stream => {
-                    // pass the current frame to the window.stream
+                    // send current frame to the window.stream
                     window.stream = stream;
-                    // pass the stream to the videoRef
+                    // send stream to the videoRef
                     this.videoRef.current.srcObject = stream;
 
                     return new Promise(resolve => {
@@ -255,10 +252,10 @@ class ObjectDetection extends Component {
                     console.error(error)
                 });
 
-            // define a Promise that'll be used to load the model
+            //load the model
             const loadlModelPromise = cocoSsd.load();
 
-            // resolve all the Promises
+            // resolve Promises all
             Promise.all([loadlModelPromise, webcamPromise,
                 faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
                 faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
@@ -267,20 +264,18 @@ class ObjectDetection extends Component {
                 faceapi.nets.faceExpressionNet.loadFromUri('/models'),
                 faceapi.nets.ageGenderNet.loadFromUri('/models')
             ]).then(values => {
+                //detect every 1000 ms = 1 sec
                 setInterval(() => {
                     //this.detectObjectFromVideo(model, video)
                     this.detectObjectFromVideo(values[0], this.videoRef.current)
                     this.detectFaceFromVideo(this.videoRef.current)
-
                 }, 1000)
-
             })
                 .catch(error => {
                     console.error(error);
                 });
         }
     }
-
 
     render() {
         return (
@@ -293,8 +288,6 @@ class ObjectDetection extends Component {
                     autoPlay
                     muted
                 />
-
-
                 <canvas className="canvas" ref={this.canvasObjectRef} width={this.state.width} height={this.state.height} />
                 <canvas className="canvas" ref={this.canvasFaceRef} width={this.state.width} height={this.state.height} />
             </div>
