@@ -35,8 +35,10 @@ export default function Mood () {
                 <label id="circlebtn" onClick={seeCircle}>Circle</label>
                 <label id="barbtn" onClick={seeBar}>Bar</label>
             </div>
-           <MoodGraphPie id="circle"/>
-           <MoodGraphBar id="bar"/>
+            <div class="graphic">
+           <MoodGraphPie/>
+           <MoodGraphBar/>
+           </div>
         </div>
     )
 }

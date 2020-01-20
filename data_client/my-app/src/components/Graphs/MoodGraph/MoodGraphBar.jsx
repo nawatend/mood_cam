@@ -76,9 +76,7 @@ export default function MoodGraph(){
     }, [])
 
     return(
-        <div id="bar" className="graphic">
-        <Bar className="displaynone" id="bar" width='100' height='100' data={dataBar} options={optionBar}/>
-        </div>
+        <Bar id="bar" className="displaynone" id="bar" width='100' height='100' data={dataBar} options={optionBar}/>
     )
 
 }
