@@ -2,15 +2,17 @@ import React, { useState, useEffect, Component } from 'react';
 import {Bar, Line, Pie} from 'react-chartjs-2';
 import db from '../../Firebase';
 
-export default function MoodGraph(){
+export default function MoodGraph(props){
     const [dataBar, setDataBar] = useState("");
     const [optionBar, setOptionBar] = useState("");
     let dateArray = "";
     let allMoodTypes = [];
     let somdata = [];
+    console.log(props.datum)
 
     function getData(){
         db.database().ref("objects").on('value', function(snapshot) {
+
             let dates = snapshot.val()
             dateArray = Object.keys(dates)
 
@@ -27,7 +29,6 @@ export default function MoodGraph(){
             }
 
             allMoodTypes.map((obj,key)=>{
-                console.log(obj)
                 let amount=0;
                 
                 for(let i = 0; i<dateArray.length; i++){
@@ -38,7 +39,6 @@ export default function MoodGraph(){
                 }
                 somdata.push(amount)
             })
-            console.log(somdata)
             makeGraphic()
         })
     }
@@ -67,6 +67,14 @@ export default function MoodGraph(){
             }
         })
     }
+
+    // if(props.datum && (dateArray !== [props.datum])){
+    //     dateArray = [props.datum]
+    //     console.log(dateArray);
+    //     getData();
+
+    // }
+
 
     useEffect(() => {
         getData()

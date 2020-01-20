@@ -31,7 +31,6 @@ export default function MoodGraph(){
             }
 
             allMoodTypes.map((obj,key)=>{
-                console.log(obj)
                 let amount=0;
                 
                 for(let i = 0; i<dateArray.length; i++){
@@ -42,7 +41,6 @@ export default function MoodGraph(){
                 }
                 somdata.push(amount)
             })
-            console.log(somdata)
             makeGraphic()
         })
     }

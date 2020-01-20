@@ -3,10 +3,23 @@ import {Bar, Line, Pie} from 'react-chartjs-2';
 import db from '../components/Firebase';
 import MoodGraphPie from '../components/Graphs/MoodGraph/MoodGraphPie';
 import MoodGraphBar from '../components/Graphs/MoodGraph/MoodGraphBar';
-
-
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function Mood () {
+
+    const [startDate, setStartDate] = useState(new Date());
+    // console.log(startDate)
+
+    function convert(str) {
+        var date = new Date(str),
+          mnth = ("0" + (date.getMonth() + 1)).slice(-2),
+          day = ("0" + date.getDate()).slice(-2);
+        return [day, mnth, date.getFullYear(),  ].join("-");
+      }
+      
+    let striktDate = convert(startDate)
+
 
     const seeBar =()=>{
         document.getElementById('circle').style.display="none"
@@ -27,10 +40,6 @@ export default function Mood () {
 
     }
 
-  
-
-    
-
     return (
         <div className="page">
             <h1>Mood</h1>
@@ -39,9 +48,16 @@ export default function Mood () {
                 <label id="circlebtn" onClick={seeCircle}>Circle</label>
                 <label id="barbtn" onClick={seeBar}>Bar</label>
             </div>
-            
+            <DatePicker
+                selected={startDate}
+                onChange={date => setStartDate(date)}
+                dateFormat="yyyy-MM-dd"
+                maxDate={new Date()}
+                isClearable
+                showDisabledMonthNavigation
+                />            
             <div class="graphic">
-           <MoodGraphPie/>
+           <MoodGraphPie datum={striktDate}/>
            <MoodGraphBar/>
            </div>
         </div>
