@@ -5,6 +5,7 @@ import MoodGraphPie from '../components/Graphs/MoodGraph/MoodGraphPie';
 import MoodGraphBar from '../components/Graphs/MoodGraph/MoodGraphBar';
 
 
+
 export default function Mood () {
 
     const seeBar =()=>{
@@ -26,6 +27,9 @@ export default function Mood () {
 
     }
 
+  
+
+    
 
     return (
         <div className="page">
@@ -35,6 +39,7 @@ export default function Mood () {
                 <label id="circlebtn" onClick={seeCircle}>Circle</label>
                 <label id="barbtn" onClick={seeBar}>Bar</label>
             </div>
+            
             <div class="graphic">
            <MoodGraphPie/>
            <MoodGraphBar/>

@@ -15,7 +15,7 @@ export default function ObjectGraphPie(){
             let red = Math.floor(Math.random() * 255) + 1  
             let green = Math.floor(Math.random() * 255) + 1  
             let blue = Math.floor(Math.random() * 255) + 1  
-            randomColor.push(`rgba(${red},${green},${blue},0.9)`)
+            randomColor.push(`rgba(${red},${green},${blue},0.5)`)
         }
         console.log(randomColor);
         makeGraphic()

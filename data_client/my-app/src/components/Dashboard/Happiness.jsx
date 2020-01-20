@@ -1,17 +1,17 @@
-import React, { useState, useEffect, Component } from 'react';
+import db from './../Firebase';
 import {Bar, Line, Pie} from 'react-chartjs-2';
-import db from '../../Firebase';
+import React, { useState, useEffect, Component } from 'react';
 
-export default function MoodGraph(){
-    const [dataBar, setDataBar] = useState("");
-    const [optionBar, setOptionBar] = useState("");
-    let dateArray = "";
-    let allMoodTypes = [];
-    let somdata = [];
+export default function Days(){
 
-    function getData(){
+
+    function makeData(){
         db.database().ref("objects").on('value', function(snapshot) {
+            let dateArray = "";
+            let allMoodTypes = [];
+            let somdata = 0;
             let dates = snapshot.val()
+            let totalHappiness = 0;
             dateArray = Object.keys(dates)
 
             for(let i = 0; i<dateArray.length; i++){
@@ -23,11 +23,12 @@ export default function MoodGraph(){
                         }
                     }
                 })
-                
+                db.database().ref(`objects/${dateArray[i]}/person/happy`).on('value', function(snapshot){
+                    totalHappiness = totalHappiness + snapshot.val()
+                })
             }
 
             allMoodTypes.map((obj,key)=>{
-                console.log(obj)
                 let amount=0;
                 
                 for(let i = 0; i<dateArray.length; i++){
@@ -36,44 +37,20 @@ export default function MoodGraph(){
                         amount = amount + number
                     })
                 }
-                somdata.push(amount)
+                somdata = somdata + amount
             })
-            console.log(somdata)
-            makeGraphic()
-        })
-    }
-
-
-    function makeGraphic() {
-        setDataBar({
-            labels: allMoodTypes,
-            datasets: [{
-                label: "Mood",
-                data: somdata,
-                backgroundColor: [
-                    'rgba(132, 16, 16, 0.4)',
-                    'rgba(233, 229, 200, 0.4)',
-                    'rgba(181, 225, 198, 0.4)',
-                    'rgba(255, 255, 255, 0.4)',
-                    'rgba(24, 49, 108, 0.4)',
-                    'rgba(255, 122, 23, 0.4)',
-                ]     
-            }],
-        })
-
-        setOptionBar({
-            legend: {
-                position: 'right',
-            }
+            document.getElementById('amountHappiness').innerHTML = ((totalHappiness/somdata)*100).toFixed(2) + ' %'
         })
     }
 
     useEffect(() => {
-        getData()
+        makeData()
     }, [])
 
     return(
-        <Pie id="circle" width='100' height='100' data={dataBar} options={optionBar}/>
+        <div>
+        <h2 id="amountHappiness"></h2>
+        <h3>happiness</h3>
+        </div>
     )
-
 }

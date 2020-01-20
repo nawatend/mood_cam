@@ -1,6 +1,8 @@
 import React, { useState, useEffect, Component } from 'react';
 import {Bar, Line, Pie} from 'react-chartjs-2';
 import db from '../../Firebase';
+import DatePicker from "react-datepicker";
+
 
 export default function MoodGraph(){
     const [dataBar, setDataBar] = useState("");
@@ -8,6 +10,8 @@ export default function MoodGraph(){
     let dateArray = "";
     let allMoodTypes = [];
     let somdata = [];
+    const [startDate, setStartDate] = useState(new Date());
+
 
     function getData(){
         db.database().ref("objects").on('value', function(snapshot) {
@@ -75,8 +79,14 @@ export default function MoodGraph(){
         getData()
     }, [])
 
+    
+  
+
+
     return(
+        <div>
         <Bar id="bar" className="displaynone" id="bar" width='100' height='100' data={dataBar} options={optionBar}/>
+        </div>
     )
 
 }

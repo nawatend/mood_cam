@@ -7,6 +7,7 @@ import Dashboard from './views/Dashboard';
 import './App.css';
 import './css/graphic.css';
 import './css/page.css';
+import './css/dashboard.css';
 
 import {
   BrowserRouter as Router,
