@@ -8,7 +8,6 @@ export default function MoodGraph(props){
     let dateArray = "";
     let allMoodTypes = [];
     let somdata = [];
-    console.log(props.datum)
 
     function getData(){
         db.database().ref("objects").on('value', function(snapshot) {

@@ -6,7 +6,7 @@
     transition: 0.2s;
 }
 
-.page {
+.page{
     padding-top: 5%;
 }
 
@@ -28,4 +28,21 @@
 .select label:hover {
     font-weight: 800;
     border-bottom: 3px solid rgb(6, 6, 92);
+}
+
+.homepage{
+    background-image: url('./../assets/background.jpg');
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+
+}
+
+.homepage h1 {
+    font-size: 80px;
+    font-weight: 100;
 }

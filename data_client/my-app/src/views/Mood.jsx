@@ -3,62 +3,67 @@ import {Bar, Line, Pie} from 'react-chartjs-2';
 import db from '../components/Firebase';
 import MoodGraphPie from '../components/Graphs/MoodGraph/MoodGraphPie';
 import MoodGraphBar from '../components/Graphs/MoodGraph/MoodGraphBar';
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import MoodGraphOverview from '../components/Graphs/MoodGraph/MoodGraphOverview';
 
 export default function Mood () {
 
-    const [startDate, setStartDate] = useState(new Date());
-    // console.log(startDate)
+    window.addEventListener('load', function(){
+        document.getElementById('overview').style.display="none";
+        document.getElementById('bar').style.display="none"
+    })
 
-    function convert(str) {
-        var date = new Date(str),
-          mnth = ("0" + (date.getMonth() + 1)).slice(-2),
-          day = ("0" + date.getDate()).slice(-2);
-        return [day, mnth, date.getFullYear(),  ].join("-");
-      }
-      
-    let striktDate = convert(startDate)
-
-
-    const seeBar =()=>{
+    const unseeCircle =()=>{
         document.getElementById('circle').style.display="none"
-        document.getElementById('bar').style.display="block"
-        document.getElementById('barbtn').style.borderBottom="3px solid rgb(6, 6, 92)"
-        document.getElementById('circlebtn').style.borderBottom="1px solid rgb(6, 6, 92)"
-        document.getElementById('barbtn').style.fontWeight="800"
-        document.getElementById('circlebtn').style.fontWeight="100"
-        
+        document.getElementById('circleBtn').style.borderBottom="1px solid rgb(6, 6, 92)"
+        document.getElementById('circleBtn').style.fontWeight="100"
     }
+    const unseeBar =()=>{
+        document.getElementById('bar').style.display="none"
+        document.getElementById('barBtn').style.borderBottom="1px solid rgb(6, 6, 92)"
+        document.getElementById('barBtn').style.fontWeight="100"
+    }
+    const unseeOverview =()=>{
+        document.getElementById('overview').style.display="none"
+        document.getElementById('overviewBtn').style.borderBottom="1px solid rgb(6, 6, 92)"
+        document.getElementById('overviewBtn').style.fontWeight="100"
+    }
+    
     const seeCircle =()=>{
         document.getElementById('circle').style.display="block"
-        document.getElementById('bar').style.display="none"
-        document.getElementById('circlebtn').style.borderBottom="solid 3px rgb(6, 6, 92)"
-        document.getElementById('barbtn').style.borderBottom="1px solid rgb(6, 6, 92)"
-        document.getElementById('barbtn').style.fontWeight="100"
-        document.getElementById('circlebtn').style.fontWeight="800"
-
+        document.getElementById('circleBtn').style.borderBottom="3px solid rgb(6, 6, 92)"
+        document.getElementById('circleBtn').style.fontWeight="800"
+        unseeBar()
+        unseeOverview()
     }
+    const seeBar =()=>{
+        document.getElementById('bar').style.display="block"
+        document.getElementById('barBtn').style.borderBottom="3px solid rgb(6, 6, 92)"
+        document.getElementById('barBtn').style.fontWeight="800"
+        unseeCircle()
+        unseeOverview()
+    }
+    const seeOverview =()=>{
+        document.getElementById('overview').style.display="block"
+        document.getElementById('overviewBtn').style.borderBottom="3px solid rgb(6, 6, 92)"
+        document.getElementById('overviewBtn').style.fontWeight="800"
+        unseeCircle()
+        unseeBar()
+    }
+
 
     return (
         <div className="page">
             <h1>Mood</h1>
             <p>Here you can select from day to day if there where any persons what there mood was</p>
             <div className="select">
-                <label id="circlebtn" onClick={seeCircle}>Circle</label>
-                <label id="barbtn" onClick={seeBar}>Bar</label>
-            </div>
-            <DatePicker
-                selected={startDate}
-                onChange={date => setStartDate(date)}
-                dateFormat="yyyy-MM-dd"
-                maxDate={new Date()}
-                isClearable
-                showDisabledMonthNavigation
-                />            
+                <label id="circleBtn" onClick={seeCircle}>Circle</label>
+                <label id="barBtn" onClick={seeBar}>Bar</label>
+                <label id="overviewBtn" onClick={seeOverview}>Overview</label>
+            </div>     
             <div class="graphic">
-           <MoodGraphPie datum={striktDate}/>
+           <MoodGraphPie/>
            <MoodGraphBar/>
+           <MoodGraphOverview/>
            </div>
         </div>
     )
