@@ -4,13 +4,15 @@ import * as faceapi from 'face-api.js';
 import '../App.css';
 import firebase from '../utils/firebase'
 import getTodayDate from '../utils/functions'
+import { removeAllElements } from '../utils/helper'
 
 class ObjectDetection extends Component {
 
     state = {
         width: 640,
         height: 480,
-        objectDetectedNames: []
+        objectDetectedNames: [],
+        objectEmotions: []
     }
 
     constructor(props) {
@@ -21,12 +23,13 @@ class ObjectDetection extends Component {
         this.canvasFaceRef = React.createRef()
         this.database = firebase.database()
         this.img = new Image()
+        this.todayObjectEmotion = this.database.ref('objects/' + getTodayDate() + '/person/')
     }
 
     handleDetections = (objectDetections) => {
 
         //copy from currect state 
-        let newArray = [...this.state.objectDetectedNames]
+        let detectedObjectsBuffer = [...this.state.objectDetectedNames]
         let allObjectsRef = this.database.ref('objects/')
         let todayObjectRef = this.database.ref('objects/' + getTodayDate() + '/')
 
@@ -37,14 +40,17 @@ class ObjectDetection extends Component {
             objectDetections.forEach((objectDetection, id) => {
                 if (objectDetection.score.toFixed(2) >= 0.70) {
                     //check if new detection is in array of 1 sec ago
-                    if (newArray.includes(objectDetection.class)) {
-                        // + one to detected class - in Firebase
+                    // if (newArray.includes(objectDetection.class)) {
+                    //     // + one to detected class - in Firebase
 
-                    } else {
-                        //add to array for FIREBASE
-                        newArray.push(objectDetection.class)
-                        this.setState({ detectedNames: newArray })
-                    }
+                    // } else {
+                    //     //add to array for FIREBASE
+                    //     newArray.push(objectDetection.class)
+                    //     this.setState({ detectedNames: newArray })
+                    // }
+
+                    detectedObjectsBuffer.push(objectDetection.class)
+
 
                     //check if today date object is exist
                     allObjectsRef.once('value', (snapshots) => {
@@ -67,15 +73,46 @@ class ObjectDetection extends Component {
                             if (snapshot.key === objectDetection.class) {
 
                                 let total = 0
+                                let sameObjectTotal = 0
+                                const staticObjectLimit = 10
+
+                                detectedObjectsBuffer.forEach(detectedName => {
+                                    if (objectDetection.class === detectedName) { sameObjectTotal += 1 }
+                                    //console.log("SAME OBJEC" + detectedName + " total: " + sameObjectTotal)
+                                });
+
+                                //console.log(detectedObjectsBuffer)
 
                                 if (objectDetection.class !== "person") {
-                                    total = snapshot.val()
-                                    this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(++total)
+                                    //NON PERSON
+                                    if (sameObjectTotal <= staticObjectLimit) {
+                                        //get total from db
+                                        total = snapshot.val()
+                                        this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(++total)
+                                    } else {
+                                        total = snapshot.val()
+                                        this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key).set(total - 9)
+                                        //remove current same objects
+                                        detectedObjectsBuffer = removeAllElements(detectedObjectsBuffer, objectDetection.class)
+                                        // console.log(detectedObjectsBuffer)
+
+                                    }
                                 } else {
-                                    total = snapshot.val().totalPerson
-                                    this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key + "/totalPerson").set(++total)
+                                    // PERSON
+                                    if (sameObjectTotal <= staticObjectLimit) {
+                                        //get total from db
+                                        total = snapshot.val().totalPerson
+                                        this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key + "/totalPerson").set(++total)
+                                    } else {
+                                        total = snapshot.val().totalPerson
+                                        this.database.ref("objects/" + getTodayDate() + "/" + snapshot.key + "/totalPerson").set(total - 9)
+
+                                        //remove current same objects
+                                        detectedObjectsBuffer = removeAllElements(detectedObjectsBuffer, objectDetection.class)
+                                    }
                                 }
                             } else {
+                                //adding new object detected
                                 if (!snapshots.hasChild(objectDetection.class)) {
 
                                     if (objectDetection.class === "person") {
@@ -91,12 +128,10 @@ class ObjectDetection extends Component {
                     })
 
                 }
-
-                //empty array
-                if (id === (objectDetections.length - 1)) {
-                    this.setState({ objectDetectedNames: [] })
-                }
             })
+            //update detectedNames + current New DetectedNames
+            //console.log(detectedObjectsBuffer)
+            this.setState({ objectDetectedNames: detectedObjectsBuffer })
         } else {
             //EMPTY state.objectDetectedNames
             console.log('Nothing is detected')
@@ -126,17 +161,50 @@ class ObjectDetection extends Component {
 
     drawFilter = (canvasContext, faceDetections) => {
 
+        let emotionBuffer = [...this.state.objectEmotions]
+
         if (faceDetections.length >= 1) {
 
             faceDetections.forEach((faceDetection) => {
+
+                let sameObjectTotal = 0
+                const staticObjectLimit = 10
+
                 //this one line code from online
                 let faceEmotion = Object.keys(faceDetection.expressions).reduce((a, b) => faceDetection.expressions[a] > faceDetection.expressions[b] ? a : b);
 
-                this.database.ref("objects/" + getTodayDate() + "/person/" + faceEmotion).set(5)
+                this.todayObjectEmotion.once('value', (snapshots) => {
+
+                    snapshots.forEach(snapshot => {
+
+                        if (faceEmotion === snapshot.key) {
+
+
+                            let total = snapshot.val()
+                            emotionBuffer.push(faceEmotion)
+                            // if (snapshot.key === faceEmotion) {
+                            //     this.database.ref("objects/" + getTodayDate() + "/person/" + faceEmotion).set(++total)
+                            // }
+
+                            emotionBuffer.forEach(emotion => {
+                                if (faceEmotion === emotion) { sameObjectTotal += 1 }
+                            });
+
+                            if (sameObjectTotal <= staticObjectLimit) {
+                                //get total from db
+                                this.database.ref("objects/" + getTodayDate() + "/person/" + faceEmotion).set(++total)
+                            } else {
+                                this.database.ref("objects/" + getTodayDate() + "/person/" + faceEmotion).set(total - 9)
+                                //remove current same objects
+                                emotionBuffer = removeAllElements(emotionBuffer, faceEmotion)
+                            }
+                        }
+                    });
+                })
 
                 //load image by emotion
-                faceEmotion += ".png"
-                this.img.src = "filters/" + faceEmotion
+                let imagefaceEmotion = faceEmotion + ".png"
+                this.img.src = "filters/" + imagefaceEmotion
 
                 let x = faceDetection.detection.box.x + 30
                 let y = faceDetection.detection.box.y - 20
@@ -145,12 +213,15 @@ class ObjectDetection extends Component {
 
                 // canvasContext.strokeStyle = "green"
                 // canvasContext.strokeWidth = 1
-                //canvasContext.strokeRect(x, y, width, height)
+                // canvasContext.strokeRect(x, y, width, height)
 
                 //1:1.55 filter image ratio
                 canvasContext.drawImage(this.img, x, y, width, width * 1.255)
                 console.log('filter drawn')
             })
+
+            //console.log(emotionBuffer)
+            this.setState({ objectEmotions: emotionBuffer })
         }
     }
 
@@ -228,7 +299,6 @@ class ObjectDetection extends Component {
     };
 
     componentDidMount() {
-
         if (navigator.mediaDevices.getUserMedia || navigator.mediaDevices.webkitGetUserMedia) {
             // load cam and read its frames
             const webcamPromise = navigator.mediaDevices
