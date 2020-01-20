@@ -2,7 +2,7 @@ import React, { useState, useEffect, Component } from 'react';
 import {Bar, Line, Pie} from 'react-chartjs-2';
 import db from '../components/Firebase.jsx';
 import GenderGraph from '../components/Graphs/statisticGraph/GenderGraph';
-import OverviewGraph from '../components/Graphs/statisticGraph/OverviewGraph';
+import ObjPrsGraph from '../components/Graphs/statisticGraph/ObjPrsGraph';
 
 
 export default function Statistic () {
@@ -65,8 +65,8 @@ export default function Statistic () {
             </div>
             <div id="graphic" className="graphic">
                 <GenderGraph />
-                <Bar id="objprs" width='100' height='100'/>
-                <OverviewGraph id="overview" width='100' height='100'/>
+                <ObjPrsGraph />
+                <Bar id="overview" width='100' height='100'/>
             </div>
         </div>
     )
